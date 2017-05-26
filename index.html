@@ -1,0 +1,449 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<title>Django Intro</title>
+<!-- metadata -->
+<meta name="generator" content="S5" />
+<meta name="version" content="S5 1.1" />
+<meta name="presdate" content="20100415" />
+<meta name="author" content="Colin MacDonald" />
+<meta name="company" content="Matrix Group International" />
+<!-- configuration parameters -->
+<meta name="defaultView" content="slideshow" />
+<meta name="controlVis" content="hidden" />
+<!-- style sheet links -->
+<link rel="stylesheet" href="ui/default/slides.css" type="text/css" media="projection" id="slideProj" />
+<link rel="stylesheet" href="ui/default/outline.css" type="text/css" media="screen" id="outlineStyle" />
+<link rel="stylesheet" href="ui/default/print.css" type="text/css" media="print" id="slidePrint" />
+<link rel="stylesheet" href="ui/default/opera.css" type="text/css" media="projection" id="operaFix" />
+<!-- embedded styles -->
+<style type="text/css" media="all">
+.imgcon {width: 525px; margin: 0 auto; padding: 0; text-align: center;}
+#anim {width: 270px; height: 320px; position: relative; margin-top: 0.5em;}
+#anim img {position: absolute; top: 42px; left: 24px;}
+img#me01 {top: 0; left: 0;}
+img#me02 {left: 23px;}
+img#me04 {top: 44px;}
+img#me05 {top: 43px;left: 36px;}
+</style>
+<!-- S5 JS -->
+<script src="ui/default/slides.js" type="text/javascript"></script>
+<!-- CSS for this slideshow -->
+<style type="text/css" media="all">
+    .tocnumber { font-weight: bold; color: grey; }
+    .slide pre { font-size: 70%; }
+    .slide p { font-size: 70%; }
+    .slide h1 { left: 0px; text-transform: none; }
+    .slide ul { margin-left: 2%; }
+    body { background-image: none; }
+    div#header { background-image: none; }
+</style>
+</head>
+<body>
+
+<div class="layout">
+<div id="controls"><!-- DO NOT EDIT --></div>
+<div id="currentSlide"><!-- DO NOT EDIT --></div>
+<div id="header"></div>
+<div id="footer">
+<h1>Django Intro</h1>
+<h2>April 15, 2010</h2>
+</div>
+</div>
+
+<div class="presentation">
+
+<div class="slide">
+<h1>Django Intro</h1>
+<h3>Colin MacDonald</h3>
+<div class="handout"></div>
+</div>
+
+
+<div class="slide">
+<h1> Web application framework </h1>
+<ul><li> Object-Relation Mapper
+</li><li> URL dispatching
+</li><li> templating
+</li><li> forms
+</li></ul>
+</div>
+
+
+<div class="slide">
+<h1> ORM </h1>
+<ul><li> Translates between Python classes and database tables
+<ul><li> Supports inheritance, abstract base classes
+</li></ul>
+</li><li> Simple methods for CRUD operations (Create, Read, Update, Delete)
+</li><li> Object relations via foreign keys
+</li><li> Doesn't require web environment - used for data load
+</li></ul>
+</div>
+
+
+<div class="slide">
+<h1> ORM Example classes </h1>
+<pre>from django.db import models
+
+class Person(models.Model):
+    first = models.CharField(max_length=30)
+    last = models.CharField(max_length=30)
+    ...
+
+class Employee(Person):
+    alt_id = models.CharField(max_length=12, blank=True)
+    ssn_last4 = models.CharField(max_length=4)
+    md5_ssn = MD5Field()
+    ...
+
+class Dependent(Person):
+    employee = models.ForeignKey(Employee)
+    sequence_number = models.IntegerField(db_index=True)
+    relation = models.CharField(max_length=30)
+</pre>
+</div>
+
+
+<div class="slide">
+<h1> ORM Example Searches </h1>
+<dl><dt> Create new Employee &amp; dependent
+</dt></dl>
+<pre>emp = Employee(first='John', last='Smith')
+dep1 = Dependent(first='Jane', last='Smith', relation='spouse', employee=emp)
+dep2 = Dependent(first='Steve', last='Smith', relation='child', employee=emp)
+</pre>
+<dl><dt> Fetch employee for dependent
+</dt></dl>
+<pre>dependent = Dependent.objects.get(first=<i>some_value</i>, last=<i>some_value</i>)
+employee = dependent.employee
+</pre>
+<dl><dt> Fetch dependents for employee
+</dt></dl>
+<pre>employee = Employee.objects.get(md5_ssn=<i>some_value</i>)
+dependents = employee.dependent<b>_set</b>.all()
+</pre>
+</div>
+
+
+<div class="slide">
+<h1> Dispatching </h1>
+<ul><li> Maps URL to action
+</li><li> Split into two parts
+<ul><li> urls.py maps URLs to functions
+</li><li> views.py defines functions which return page text
+</li></ul>
+</li></ul>
+</div>
+
+
+<div class="slide">
+<h1> urls.py </h1>
+<ul><li> List of regex-function pairs. </li>
+    <li> Central "fusebox" </li>
+    <li> Order matters <pre>
+url(r'^benefits/claims/medical', claims_medical),
+url(r'^benefits/claims', claims_overview),
+url(r'^benefits', dashboard),
+</pre>
+    <p><i>(<code>^benefits</code> will also match <code>^benefits/claims</code>)</i></p>
+    </li>
+    <li> Can include other urls modules.<pre>
+(r'^admin/', include(admin.site.urls)),
+</pre>
+    <p>Included urls will be relative to (prefixed by) the one specified.
+    So if <code>admin.site.urls</code> defines <code>url(r'^logout/$', logout)</code>, the logout URL will be <code>/admin/logout</code>.
+    </p>
+    </li>
+</ul>
+</div>
+
+
+<div class="slide">
+<h1> urls.py (cont.) </h1>
+<ul><li> Can pass part of match to function as a parameter <pre>
+url(r'^benefits/claims/detail/(?P&lt;<b>claim_number</b>&gt;\w{0,20})$', claim_detail),</pre>
+    <li> Can also pass other parameters to function <pre>
+url(r'^benefits/claims/detail/(?P&lt;claim_number&gt;\w{0,20})$',
+    claim_detail, {"<b>template</b>":'myapp/custom_claim_detail.html'}),</pre>
+    </li>
+</ul>
+</div>
+
+
+<div class="slide">
+<h1> views.py </h1>
+<p>Despite the name, this is really part of the Controller part of MVC.
+It builds data structures (models) which are used to populate a template (view).
+The first parameter to a view function is always the request object.
+</p>
+<pre>from django.shortcuts import render_to_response
+from django.template import RequestContext
+
+def claim_detail(request, <b>claim_number</b>):
+    context = RequestContext(request)
+    context['claim'] = Claim.objects.get(claim_number=claim_number)
+    return render_to_response("myapp/claim_detail.html", context_instance=context)
+</pre>
+<p>You can have other key-value parameters.
+</p>
+<pre>def claim_detail(request, claim_number, <b>template</b>="myapp/claim_detail.html"):
+    context = RequestContext(request)
+    context['claim'] = Claim.objects.get(claim_number=claim_number)
+    return render_to_response(template, context_instance=context)
+</pre>
+</div>
+
+
+<div class="slide">
+<h1> Templating </h1>
+<ul><li> Keeps Model and View separate
+<ul><li> login pages - same functionality, different templates
+</li></ul>
+</li><li> Base pages and extensions
+<ul><li> reasonably FED-friendly
+</li><li> lets you override headers (title, css, linked javascript files)
+</li></ul>
+</li><li> Included pages for re-used graphs
+</li><li> Works fine with jQuery, tablesorter, flot
+</li><li> Format-agnostic:  Can output plain text, HTML, JSON, etc.
+</li></ul>
+</div>
+
+
+<div class="slide">
+<h1> Templating Example </h1>
+<p>my_page.html
+</p>
+<pre>&lt;html&gt;
+  &lt;head&gt;
+    &lt;title&gt;My Page&lt;/title&gt;
+    ... css, javascript, etc. ...
+    {% block <b>extra_header</b>&nbsp;%}{% endblock&nbsp;%}
+  &lt;/head&gt;
+  &lt;body&gt;
+    {% block <b>page_header</b>&nbsp;%}
+    &lt;h1&gt;Welcome to My Page&lt;/h1&gt;
+    {% endblock&nbsp;%}
+  &lt;/body&gt;
+&lt;/html&gt;
+</pre>
+</div>
+
+
+<div class="slide">
+<h1> Templating Example (cont.) </h1>
+<p>my_other_page.html
+</p>
+<pre>{% extends "my_page.html"&nbsp;%}
+
+{% block <b>extra_header</b>&nbsp;%}
+  h1 { color: red; }
+{% endblock&nbsp;%}
+
+{% block <b>page_header</b>&nbsp;%}
+    &lt;h1&gt;Welcome to My Other Page&lt;/h1&gt;
+{% endblock&nbsp;%}
+</pre>
+</div>
+
+
+<div class="slide">
+<h1> forms.py </h1>
+<ul><li> Encapsulate input collection, validation, error handling, form re-population, etc. </li>
+    <li> Declarative field validation (server-side) </li>
+    <li> Form class inheritance = customization with minimum disruption
+        <ul><li> Add extra fields </li>
+            <li> Extend or override validation at the field or form level  </li>
+        </ul>
+    </li>
+</ul>
+</div>
+
+
+<div class="slide">
+<h1> forms.py example </h1>
+<h2>Base class in django.contrib.auth </h2>
+<pre>class AuthenticationForm(forms.Form):
+    username = forms.CharField(label="Username", max_length=30)
+    password = forms.CharField(label="Password", widget=forms.PasswordInput)
+    ...
+</pre>
+<h2>Extension which adds Terms of Use checkbox </h2>
+<pre>class LoginForm(django.contrib.auth.AuthenticationForm):
+    accept_terms = forms.BooleanField(
+        label=u'I have read and accept the Terms of Use.',
+        error_messages = {'required': u'Terms of Use not accepted.'}
+        )
+</pre>
+<h2>Example of a character field validated against a regex</h2>
+<pre>
+    last_name = forms.RegexField(
+        regex=r"^ *[\w\-' ]+ *$",
+        max_length=30,
+        widget=forms.TextInput(attrs={'class':'required'}),
+        label=u'Last Name')</pre>
+</div>
+
+<div class="slide">
+<h1> forms.py example (cont.) </h1>
+<p>In views.py:
+</p>
+<pre>
+from django.contrib.auth import <b>login</b>
+
+def my_login(request):
+    if request.method == "POST":
+        <b>form</b> = <b>LoginForm</b>(data=request.POST)
+        if <b>form.is_valid()</b>:
+            <b>login</b>(request, <b>form.get_user()</b>)
+            return HttpResponseRedirect('/benefits')
+    else:
+        <b>form</b> = LoginForm(request, auto_id=True)
+    return render_to_response('registration/login.html', { 'form': <b>form</b> },
+        context_instance=RequestContext(request))
+</pre>
+</div>
+
+
+<div class="slide">
+<h1> Forms example (cont.) </h1>
+<p>In the template file:
+</p>
+<pre>&lt;form id="<b>form</b>" method="post" action="/accounts/login/"&gt;
+    &lt;dl&gt;
+        &lt;dt&gt;&lt;label for="username"&gt;{{ <b>form.username.label</b> }}&lt;/label&gt;&lt;/dt&gt;
+        &lt;dd&gt;{{ <b>form.username</b> }}&lt;/dd&gt;
+        &lt;dt&gt;&lt;label for="password"&gt;{{ <b>form.password.label</b> }}&lt;/label&gt;&lt;/dt&gt;
+        &lt;dd&gt;{{ <b>form.password</b> }}&lt;/dd&gt;
+    &lt;/dl&gt;
+    &lt;p&gt;{{ <b>form.accept_terms</b> }} &lt;label for="accept_terms"&gt;
+        I have read and accept the Terms of Use.&lt;/label&gt;&lt;/p&gt;
+    &lt;input type="submit" class="submit" value="Login &gt;" /&gt;
+&lt;/form&gt;
+</pre>
+<p>There are also shortcuts that generate the form HTML: <code>{{form.as_p}}</code>, <code>{{form.as_ul}}</code>, <code>{{form.as_table}}</code></p>
+</div>
+
+
+<div class="slide">
+<h1> Applications and Projects </h1>
+<ul><li> An Application is a collection of urls, views, models, forms, and templates
+</li><li> Examples:
+<ul><li> Admin interface: Managing users, groups, permissions, etc.
+</li><li> Profiles: model class for extending user data
+</li><li> Fields: model field classes for encryption
+</li><li> Registration: urls, views, forms for account creation, login, password change
+</li></ul>
+</li>
+<li>An Application is a reusable module.  A Project is what you'd normally think of as a deployable web application. </li>
+<li>A Project is a bundle of applications, plus its own urls.py and settings.py (database connection info, etc.). </li>
+</ul>
+</div>
+
+
+<div class="slide">
+<h1> Separability </h1>
+<ul><li>This is all just Python (no XML, etc.)</li>
+    <li>Boundaries between urls, models, views, and forms aren't strict.</li>
+    <li>urls, views, and models can be used separately.
+        <ul><li>models are used in command-line data load scripts</li>
+            <li>urls and views can be used without models, or with a different model layer</li>
+        </ul>
+    </li>
+</ul>
+
+
+<div class="slide">
+<h1> MVC Example </h1>
+<p><i>Extracted from <a href="http://www.djangobook.com/en/2.0/chapter01/" class="external text" title="http://www.djangobook.com/en/2.0/chapter01/" rel="nofollow">The Django Book</a>.</i>
+</p><p>This shows how Django's various files interact.
+</p>
+<ul><li> <code>urls.py</code> defines mappings of URLs to view functions.
+</li><li> <code>views.py</code> defines handler functions that do the work of the application: They interact with data and pass it to templates for display.
+</li><li> <code>models.py</code> defines data classes.
+</li><li> Template files contain standard HTML, plus markup for data display.
+</li></ul>
+</div>
+
+
+<div class="slide">
+<h1> MVC Example (cont.) </h1>
+<h2>urls.py </h2>
+<pre>from django.conf.urls.defaults import *
+import views
+
+urlpatterns = patterns(<i>,</i>
+    (r'^latest/$', views.<b>latest_books</b>),
+)
+</pre>
+<h2>views.py </h2>
+<pre>from django.shortcuts import render_to_response
+from models import Book
+
+def <b>latest_books</b>(request):
+    book_list = <b>Book</b>.objects.order_by('-pub_date')[:10]
+    return render_to_response('latest_books.html', {'<b>book_list</b>': book_list})
+</pre>
+</div>
+
+
+<div class="slide">
+<h1> MVC Example (cont.) </h1>
+<h2>models.py </h2>
+<pre>from django.db import models
+
+class <b>Book</b>(models.Model):
+    <b>name</b> = models.CharField(max_length=50)
+    pub_date = models.DateField()
+</pre>
+<h2>latest_books.html </h2>
+<pre>
+ &lt;html&gt;&lt;head&gt;&lt;title&gt;Books&lt;/title&gt;&lt;/head&gt;
+ &lt;body&gt;
+     &lt;h1&gt;Books&lt;/h1&gt;
+     &lt;ul&gt;
+         {% for book in <b>book_list</b>&nbsp;%}
+         &lt;li&gt;{{ book.<b>name</b> }}&lt;/li&gt;
+         {% endfor&nbsp;%}
+     &lt;/ul&gt;
+ &lt;/body&gt;&lt;/html&gt;
+</pre>
+</div>
+
+
+<div class="slide">
+<h1> Review </h1>
+<ul><li>Components:
+        <ul><li>ORM (models.py)</li>
+            <li>Dispatching (urls.py, views.py) </li>
+            <li>Templating (*.html)</li>
+            <li>Forms (forms.py) </li>
+        </ul>
+    </li>
+    <li>Applications and Projects</li>
+</ul>
+</div>
+
+
+<div class="slide">
+<h1>Conclusion </h1>
+<ul><li> Seems to be the leading Python framework, based on PyCon 2010 experience.  </li>
+    <li> Nice separation of responsibilities </li>
+    <li> Cleanly extensible </li>
+    <li> Limited magic </li>
+    <li> Good documentation </li>
+    <li> Active user community
+        <ul><li> Local meetup group </li>
+            <li> PBS &amp; NASA </li>
+        </ul>
+    </li>
+</ul>
+</div>
+
+</body>
+</html>
+
